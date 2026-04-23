@@ -1,4 +1,4 @@
-const { createCanvas, registerFont, loadImage } = require('canvas');
+const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
 
 module.exports = {
@@ -8,19 +8,14 @@ module.exports = {
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
-    // Load and draw background image
+    // Load background image
     let bgImage;
     try {
       const bgImagePath = path.join(__dirname, '..', '2026-04-23 18.44.50.jpg');
       bgImage = await loadImage(bgImagePath);
     } catch (error) {
-      console.log('Background image not found, using gradient fallback');
-    }
-
-    // Draw background image or fallback gradient
-    if (bgImage) {
-      ctx.drawImage(bgImage, 0, 0, width, height);
-    } else {
+      console.error('Failed to load background image:', error);
+      // Fallback: create dark gradient
       const gradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width / 2);
       gradient.addColorStop(0, '#2b0508');
       gradient.addColorStop(1, '#1a0305');
@@ -28,12 +23,17 @@ module.exports = {
       ctx.fillRect(0, 0, width, height);
     }
 
+    // Draw background image stretched to fill canvas
+    if (bgImage) {
+      ctx.drawImage(bgImage, 0, 0, width, height);
+    }
+
     // Load and draw front image (overlay)
     let frontImage;
     try {
       const frontImagePath = path.join(__dirname, '..', '2026-04-22 21.30.02.jpg');
       frontImage = await loadImage(frontImagePath);
-      // Draw front image with opacity for overlay effect
+      // Draw front image with some opacity for overlay effect
       ctx.globalAlpha = 0.85;
       ctx.drawImage(frontImage, 0, 0, width, height);
       ctx.globalAlpha = 1.0;
@@ -45,7 +45,7 @@ module.exports = {
     ctx.fillStyle = 'rgba(20, 5, 8, 0.5)';
     ctx.fillRect(0, 0, width, height);
 
-    // Decorative pink circles (overlay pattern)
+    // Decorative pink circles (like the reference image)
     ctx.globalAlpha = 0.2;
     ctx.fillStyle = '#ff6b7a';
     ctx.beginPath();
@@ -59,30 +59,30 @@ module.exports = {
     ctx.fill();
     ctx.globalAlpha = 1.0;
 
-    // Header Text - Large and Bold with better styling
+    // Header Text - LEADERBOARD
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 72px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     
-    // Add subtle shadow for better readability
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-    ctx.fillText('LEADERBOARD', width / 2, 30);
+    // Add shadow for better readability
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetX = 3;
+    ctx.shadowOffsetY = 3;
+    ctx.fillText('LEADERBOARD', width / 2, 35);
     ctx.shadowColor = 'transparent';
 
-    // Inner Container - Semi-transparent with rounded corners
+    // Inner Container - Semi-transparent dark box
     const containerX = 80;
     const containerY = 130;
     const containerWidth = width - 160;
     const containerHeight = height - 200;
     const containerRadius = 30;
     
-    // Draw rounded rectangle container with better transparency
-    ctx.fillStyle = 'rgba(20, 5, 8, 0.75)';
-    ctx.strokeStyle = 'rgba(183, 62, 74, 0.6)';
+    // Draw rounded rectangle container
+    ctx.fillStyle = 'rgba(20, 5, 8, 0.8)';
+    ctx.strokeStyle = 'rgba(200, 80, 100, 0.6)';
     ctx.lineWidth = 4;
     
     ctx.beginPath();
@@ -110,12 +110,12 @@ module.exports = {
     
     // Calculate bar height dynamically
     const barHeight = Math.min(42, (availableHeight - (barSpacing * (displayCount - 1))) / displayCount);
-    const maxBarWidth = containerWidth - nameColumnWidth - (containerPadding * 3) - 90; // Extra space for score text
-    
+    const maxBarWidth = containerWidth - nameColumnWidth - (containerPadding * 3) - 90;
+
     leaderboard.slice(0, displayCount).forEach((user, index) => {
       const y = containerY + containerPadding + (index * (barHeight + barSpacing));
       
-      // Truncate username with ellipsis (like jayden_...)
+      // Truncate username with ellipsis
       let name = user.first_name || user.username || 'User';
       if (name.length > 12) {
         name = name.substring(0, 9) + '...';
@@ -124,20 +124,20 @@ module.exports = {
       const score = user.total;
       const barWidth = Math.max(30, (score / maxScore) * maxBarWidth);
       
-      // User Name (Left side) - White text with shadow
+      // User Name (Left side)
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 22px Arial';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-      ctx.shadowBlur = 4;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 5;
       ctx.fillText(name, containerX + containerPadding, y + (barHeight / 2));
       ctx.shadowColor = 'transparent';
 
       // Bar Start Position
       const barStartX = containerX + nameColumnWidth + containerPadding;
 
-      // Draw Bar with Rounded Corners (smoother, more rounded style)
+      // Draw Bar with Rounded Corners
       const barRadius = Math.min(25, barHeight / 2);
       const barGradient = ctx.createLinearGradient(barStartX, y, barStartX + barWidth, y);
       barGradient.addColorStop(0, '#d4556a');
@@ -163,31 +163,30 @@ module.exports = {
       ctx.textBaseline = 'middle';
       
       if (barWidth > 80) {
-        // Score inside bar - centered
         ctx.textAlign = 'center';
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 3;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 4;
         ctx.fillText(score.toLocaleString(), barStartX + (barWidth / 2), y + (barHeight / 2));
       } else {
-        // Score to the right of small bar
         ctx.textAlign = 'left';
         ctx.fillText(score.toLocaleString(), barStartX + barWidth + 15, y + (barHeight / 2));
       }
       ctx.shadowColor = 'transparent';
     });
 
-    // Chat Icon (Bottom Right) - Chat bubble with X like the desired image
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '48px Arial';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'bottom';
-    
-    // Draw a simple chat bubble with X symbol
+    // Chat Icon (Bottom Right) - Double bubble with X
     const iconX = width - 120;
     const iconY = height - 70;
     const iconSize = 45;
     
-    // Chat bubble shape
+    // First bubble (back)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.beginPath();
+    ctx.arc(iconX - 25, iconY + 15, iconSize / 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Second bubble (front)
+    ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(iconX, iconY, iconSize / 2, 0, Math.PI * 2);
     ctx.fill();
@@ -198,12 +197,6 @@ module.exports = {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('✕', iconX, iconY + 2);
-    
-    // Second bubble behind
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.beginPath();
-    ctx.arc(iconX - 25, iconY + 15, iconSize / 2.5, 0, Math.PI * 2);
-    ctx.fill();
 
     return canvas.toBuffer();
   }
