@@ -17,8 +17,6 @@ rsync -avz --delete \
   --exclude 'node_modules' \
   --exclude '.env' \
   --exclude '*.db' \
-  --exclude '*.png' \
-  --exclude '*.jpg' \
   --exclude '.git' \
   -e "sshpass -p $SERVER_PASSWORD ssh -p $SERVER_PORT" \
   ./ $SERVER_USER@$SERVER_IP:/root/chat-fight/

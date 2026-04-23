@@ -58,7 +58,7 @@ module.exports = {
 
     // Header Text - LEADERBOARD
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 90px Arial';
+    ctx.font = 'bold 90px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     
@@ -115,7 +115,7 @@ module.exports = {
       
       // User Name (Left side)
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 24px Arial';
+      ctx.font = 'bold 24px sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(name, containerX + containerPadding, y + (barHeight / 2));
@@ -133,7 +133,7 @@ module.exports = {
 
       // Score - Always inside bar if large enough, otherwise to the right
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px Arial';
+      ctx.font = 'bold 20px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       
