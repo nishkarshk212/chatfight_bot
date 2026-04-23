@@ -8,19 +8,18 @@ module.exports = {
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+
     // Load and draw background image
     let bgImage;
     try {
       const bgImagePath = path.join(__dirname, '..', '2026-04-23 18.44.50.jpg');
       bgImage = await loadImage(bgImagePath);
+      // Draw background image stretched to fill canvas
+      ctx.drawImage(bgImage, 0, 0, width, height);
     } catch (error) {
       console.log('Background image not found, using gradient fallback');
-    }
-
-    // Draw background image or fallback gradient
-    if (bgImage) {
-      ctx.drawImage(bgImage, 0, 0, width, height);
-    } else {
       const gradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width / 2);
       gradient.addColorStop(0, '#2b0508');
       gradient.addColorStop(1, '#1a0305');
@@ -28,21 +27,8 @@ module.exports = {
       ctx.fillRect(0, 0, width, height);
     }
 
-    // Load and draw front image (overlay)
-    let frontImage;
-    try {
-      const frontImagePath = path.join(__dirname, '..', '2026-04-22 21.30.02.jpg');
-      frontImage = await loadImage(frontImagePath);
-      // Draw front image with opacity for overlay effect
-      ctx.globalAlpha = 0.85;
-      ctx.drawImage(frontImage, 0, 0, width, height);
-      ctx.globalAlpha = 1.0;
-    } catch (error) {
-      console.log('Front image not found, skipping overlay');
-    }
-
-    // Dark overlay for better text readability
-    ctx.fillStyle = 'rgba(20, 5, 8, 0.5)';
+    // Add dark overlay for better readability
+    ctx.fillStyle = 'rgba(30, 8, 12, 0.4)';
     ctx.fillRect(0, 0, width, height);
 
     // Decorative pink circles (overlay pattern)
@@ -81,8 +67,8 @@ module.exports = {
     const containerRadius = 30;
     
     // Draw rounded rectangle container with better transparency
-    ctx.fillStyle = 'rgba(20, 5, 8, 0.75)';
-    ctx.strokeStyle = 'rgba(183, 62, 74, 0.6)';
+    ctx.fillStyle = 'rgba(15, 3, 6, 0.85)';
+    ctx.strokeStyle = 'rgba(200, 80, 100, 0.7)';
     ctx.lineWidth = 4;
     
     ctx.beginPath();
@@ -103,33 +89,36 @@ module.exports = {
 
     const maxScore = Math.max(...leaderboard.map(u => u.total));
     const containerPadding = 35;
-    const nameColumnWidth = 140;
+    const nameColumnWidth = 150;
     const availableHeight = containerHeight - (containerPadding * 2);
-    const barSpacing = 12;
+    const barSpacing = 10;
     const displayCount = Math.min(10, leaderboard.length);
     
-    // Calculate bar height dynamically
-    const barHeight = Math.min(42, (availableHeight - (barSpacing * (displayCount - 1))) / displayCount);
-    const maxBarWidth = containerWidth - nameColumnWidth - (containerPadding * 3) - 90; // Extra space for score text
+    // Calculate bar height dynamically - make bars taller
+    const barHeight = Math.min(48, (availableHeight - (barSpacing * (displayCount - 1))) / displayCount);
+    const maxBarWidth = containerWidth - nameColumnWidth - (containerPadding * 3) - 100; // Extra space for score text
     
     leaderboard.slice(0, displayCount).forEach((user, index) => {
       const y = containerY + containerPadding + (index * (barHeight + barSpacing));
       
-      // Truncate username with ellipsis (like jayden_...)
+      // Get username and truncate properly - remove emojis
       let name = user.first_name || user.username || 'User';
+      // Remove emojis and special Unicode characters
+      name = name.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+      // Truncate with ellipsis if too long
       if (name.length > 12) {
-        name = name.substring(0, 9) + '...';
+        name = name.substring(0, 10) + '..';
       }
       
       const score = user.total;
-      const barWidth = Math.max(30, (score / maxScore) * maxBarWidth);
+      const barWidth = Math.max(40, (score / maxScore) * maxBarWidth);
       
-      // User Name (Left side) - White text with shadow
+      // User Name (Left side) - Clean white text
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 22px Arial';
+      ctx.font = 'bold 24px Arial';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
       ctx.shadowBlur = 4;
       ctx.fillText(name, containerX + containerPadding, y + (barHeight / 2));
       ctx.shadowColor = 'transparent';
@@ -137,12 +126,9 @@ module.exports = {
       // Bar Start Position
       const barStartX = containerX + nameColumnWidth + containerPadding;
 
-      // Draw Bar with Rounded Corners (smoother, more rounded style)
-      const barRadius = Math.min(25, barHeight / 2);
-      const barGradient = ctx.createLinearGradient(barStartX, y, barStartX + barWidth, y);
-      barGradient.addColorStop(0, '#d4556a');
-      barGradient.addColorStop(1, '#c74b5e');
-      ctx.fillStyle = barGradient;
+      // Draw Bar with solid color - cleaner look
+      const barRadius = Math.min(24, barHeight / 2);
+      ctx.fillStyle = '#d4556a';
       
       ctx.beginPath();
       ctx.moveTo(barStartX + barRadius, y);
@@ -157,53 +143,40 @@ module.exports = {
       ctx.closePath();
       ctx.fill();
 
-      // Score - Inside bar if large enough, otherwise to the right
+      // Score - Always inside bar, centered
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px Arial';
+      ctx.font = 'bold 22px Arial';
+      ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      
-      if (barWidth > 80) {
-        // Score inside bar - centered
-        ctx.textAlign = 'center';
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 3;
-        ctx.fillText(score.toLocaleString(), barStartX + (barWidth / 2), y + (barHeight / 2));
-      } else {
-        // Score to the right of small bar
-        ctx.textAlign = 'left';
-        ctx.fillText(score.toLocaleString(), barStartX + barWidth + 15, y + (barHeight / 2));
-      }
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 3;
+      ctx.fillText(score.toLocaleString(), barStartX + (barWidth / 2), y + (barHeight / 2));
       ctx.shadowColor = 'transparent';
     });
 
-    // Chat Icon (Bottom Right) - Chat bubble with X like the desired image
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '48px Arial';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'bottom';
+    // Chat Icon (Bottom Right) - Two overlapping speech bubbles with X
+    const iconX = width - 110;
+    const iconY = height - 65;
     
-    // Draw a simple chat bubble with X symbol
-    const iconX = width - 120;
-    const iconY = height - 70;
-    const iconSize = 45;
-    
-    // Chat bubble shape
+    // First bubble (behind, slightly offset)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
     ctx.beginPath();
-    ctx.arc(iconX, iconY, iconSize / 2, 0, Math.PI * 2);
+    ctx.ellipse(iconX - 18, iconY + 12, 22, 18, 0, 0, Math.PI * 2);
     ctx.fill();
     
-    // X symbol inside
+    // Second bubble (front)
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(iconX, iconY, 25, 22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // X symbol inside front bubble
     ctx.fillStyle = '#1a0305';
-    ctx.font = 'bold 36px Arial';
+    ctx.font = 'bold 28px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('✕', iconX, iconY + 2);
-    
-    // Second bubble behind
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.beginPath();
-    ctx.arc(iconX - 25, iconY + 15, iconSize / 2.5, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.fillText('✕', iconX, iconY + 1);
 
     return canvas.toBuffer();
   }
