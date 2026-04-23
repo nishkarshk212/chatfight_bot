@@ -192,7 +192,7 @@ const isAdmin = async (ctx) => {
 // Auto-delete message helper
 const autoDeleteMessage = async (ctx, messageId, delay = 60000) => {
   try {
-    const settings = db.getGroupSettings(ctx.chat.id);
+    const settings = await db.getGroupSettings(ctx.chat.id);
     if (settings.auto_delete_commands && ctx.chat.type !== 'private') {
       setTimeout(async () => {
         try {

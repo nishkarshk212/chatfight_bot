@@ -76,14 +76,20 @@ module.exports = {
   checkMessageMilestone: async (groupId) => {
     const today = new Date().toISOString().split('T')[0];
     
-    // Get total messages today for this group
-    const totalToday = await this.getTotalMessages(groupId, 'today');
+    // Get total messages today for this group - call the function from module.exports
+    const db = module.exports;
+    const totalToday = await db.getTotalMessages(groupId, 'today');
     
     // Get or create milestone record for today
     let milestoneRecord = await models.DailyMilestone.findOne({ group_id: groupId, date: today });
     
     if (!milestoneRecord) {
-      await models.DailyMilestone.create({ group_id: groupId, date: today });
+      // Use findOneAndUpdate with upsert to avoid duplicate key errors
+      await models.DailyMilestone.findOneAndUpdate(
+        { group_id: groupId, date: today },
+        { group_id: groupId, date: today, milestone_500: 0, milestone_1000: 0, milestone_1500: 0 },
+        { upsert: true, new: true }
+      );
       milestoneRecord = { group_id: groupId, date: today, milestone_500: 0, milestone_1000: 0, milestone_1500: 0 };
     }
     

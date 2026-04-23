@@ -89,6 +89,7 @@ module.exports = {
         Markup.button.callback(`${s.show_propic ? '✅' : '❌'} Show propic`, 'gs_profile_view')
       ],
       [Markup.button.callback(`${s.weekly_report ? '✅' : '❌'} Send weekly ranking on Monday`, 'toggle_s_weekly_report')],
+      [Markup.button.callback(`${s.auto_delete_commands ? '✅' : '❌'} Auto-delete commands`, 'toggle_s_auto_delete_commands')],
       [Markup.button.callback(`${s.notifications ? '🎯' : '⭕'} Notification for achieved goals`, 'gs_objectives')],
       [Markup.button.callback('⬅️ Back', 'gs_main')]
     ]);
@@ -127,7 +128,8 @@ Here you can manage other bot settings.
 ${s.daily_report ? '✅' : '❌'} *Daily report*: Choose whether to send the daily leaderboard automatically at midnight
 ${s.count_media ? '✅' : '❌'} *Count media*: Choose if you want to count media messages (such as photos, videos, etc...)
 ${s.show_propic ? '✅' : '❌'} *Show propic*: Choose whether to show the user's profile picture when running the /profile command
-${s.show_chart ? '✅' : '❌'} *Show chart*: Choose whether to show the message graph when running the /rankings command`;
+${s.show_chart ? '✅' : '❌'} *Show chart*: Choose whether to show the message graph when running the /rankings command
+${s.auto_delete_commands ? '✅' : '❌'} *Auto-delete commands*: Automatically delete bot messages and commands after 1 minute`;
   },
 
   formatProfileView: () => {
