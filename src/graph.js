@@ -7,93 +7,119 @@ module.exports = {
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
-    // Background - Dark Gradient
+    // Background - Dark Gradient (matching the image style)
     const gradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width / 2);
     gradient.addColorStop(0, '#2b0508');
     gradient.addColorStop(1, '#1a0305');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
-    // Header Text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 70px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('LEADERBOARD', width / 2, 100);
+    // Decorative circles (background pattern like the image)
+    ctx.globalAlpha = 0.1;
+    ctx.fillStyle = '#ff6b7a';
+    ctx.beginPath();
+    ctx.arc(-100, 100, 200, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(width + 100, height - 100, 250, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1.0;
 
-    // Inner Container
+    // Header Text - Large and Bold
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 80px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('LEADERBOARD', width / 2, 40);
+
+    // Inner Container - Semi-transparent with rounded corners
     const containerX = 80;
     const containerY = 150;
     const containerWidth = width - 160;
-    const containerHeight = height - 230;
+    const containerHeight = height - 220;
+    const containerRadius = 30;
     
-    ctx.strokeStyle = '#4a0a0e';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(containerX, containerY, containerWidth, containerHeight);
+    // Draw rounded rectangle container
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.strokeStyle = 'rgba(183, 62, 74, 0.5)';
+    ctx.lineWidth = 3;
+    
+    ctx.beginPath();
+    ctx.moveTo(containerX + containerRadius, containerY);
+    ctx.lineTo(containerX + containerWidth - containerRadius, containerY);
+    ctx.quadraticCurveTo(containerX + containerWidth, containerY, containerX + containerWidth, containerY + containerRadius);
+    ctx.lineTo(containerX + containerWidth, containerY + containerHeight - containerRadius);
+    ctx.quadraticCurveTo(containerX + containerWidth, containerY + containerHeight, containerX + containerWidth - containerRadius, containerY + containerHeight);
+    ctx.lineTo(containerX + containerRadius, containerY + containerHeight);
+    ctx.quadraticCurveTo(containerX, containerY + containerHeight, containerX, containerY + containerHeight - containerRadius);
+    ctx.lineTo(containerX, containerY + containerRadius);
+    ctx.quadraticCurveTo(containerX, containerY, containerX + containerRadius, containerY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
 
     if (leaderboard.length === 0) return canvas.toBuffer();
 
     const maxScore = Math.max(...leaderboard.map(u => u.total));
-    const containerPadding = 20;
-    const nameColumnWidth = 120;
-    const scorePadding = 20;
-    
-    // Calculate bar height to fit all users in container
+    const containerPadding = 30;
+    const nameColumnWidth = 150;
     const availableHeight = containerHeight - (containerPadding * 2);
-    const barSpacing = 12;
-    const barHeight = Math.min(50, (availableHeight - (barSpacing * (leaderboard.length - 1))) / leaderboard.length);
+    const barSpacing = 15;
     
-    leaderboard.forEach((user, index) => {
+    // Calculate bar height dynamically
+    const barHeight = Math.min(45, (availableHeight - (barSpacing * (leaderboard.length - 1))) / leaderboard.length);
+    const maxBarWidth = containerWidth - nameColumnWidth - (containerPadding * 3) - 80; // Extra space for score text
+    
+    leaderboard.slice(0, 10).forEach((user, index) => {
       const y = containerY + containerPadding + (index * (barHeight + barSpacing));
-      const name = (user.first_name || user.username || 'User').substring(0, 12);
+      const name = (user.first_name || user.username || 'User').substring(0, 15);
       const score = user.total;
       
-      // User Name (Left side)
+      // User Name (Left side) - White text
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 22px Arial';
+      ctx.font = 'bold 24px Arial';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(name, containerX + containerPadding, y + (barHeight / 2));
 
-      // Bar Background Area
-      const barStartX = containerX + nameColumnWidth;
-      const maxBarWidth = containerWidth - nameColumnWidth - (containerPadding * 2);
-      const barWidth = Math.max(50, (score / maxScore) * maxBarWidth);
+      // Bar Start Position
+      const barStartX = containerX + nameColumnWidth + containerPadding;
+      const barWidth = Math.max(40, (score / maxScore) * maxBarWidth);
 
-      // Draw Bar with Rounded Corners
-      ctx.fillStyle = '#b73e4a';
-      const radius = Math.min(15, barHeight / 2);
+      // Draw Bar with Rounded Corners (matching the image style)
+      const barRadius = Math.min(20, barHeight / 2);
+      const barGradient = ctx.createLinearGradient(barStartX, y, barStartX + barWidth, y);
+      barGradient.addColorStop(0, '#d4556a');
+      barGradient.addColorStop(1, '#c74b5e');
+      ctx.fillStyle = barGradient;
+      
       ctx.beginPath();
-      
-      // Top-left corner
-      ctx.moveTo(barStartX + radius, y);
-      // Top-right corner
-      ctx.lineTo(barStartX + barWidth - radius, y);
-      ctx.quadraticCurveTo(barStartX + barWidth, y, barStartX + barWidth, y + radius);
-      // Bottom-right corner
-      ctx.lineTo(barStartX + barWidth, y + barHeight - radius);
-      ctx.quadraticCurveTo(barStartX + barWidth, y + barHeight, barStartX + barWidth - radius, y + barHeight);
-      // Bottom-left corner
-      ctx.lineTo(barStartX + radius, y + barHeight);
-      ctx.quadraticCurveTo(barStartX, y + barHeight, barStartX, y + barHeight - radius);
-      ctx.lineTo(barStartX, y + radius);
-      ctx.quadraticCurveTo(barStartX, y, barStartX + radius, y);
-      
+      ctx.moveTo(barStartX + barRadius, y);
+      ctx.lineTo(barStartX + barWidth - barRadius, y);
+      ctx.quadraticCurveTo(barStartX + barWidth, y, barStartX + barWidth, y + barRadius);
+      ctx.lineTo(barStartX + barWidth, y + barHeight - barRadius);
+      ctx.quadraticCurveTo(barStartX + barWidth, y + barHeight, barStartX + barWidth - barRadius, y + barHeight);
+      ctx.lineTo(barStartX + barRadius, y + barHeight);
+      ctx.quadraticCurveTo(barStartX, y + barHeight, barStartX, y + barHeight - barRadius);
+      ctx.lineTo(barStartX, y + barRadius);
+      ctx.quadraticCurveTo(barStartX, y, barStartX + barRadius, y);
       ctx.closePath();
       ctx.fill();
 
-      // Score inside bar
+      // Score inside bar - Centered and bold
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px Arial';
+      ctx.font = 'bold 22px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(score.toLocaleString(), barStartX + (barWidth / 2), y + (barHeight / 2));
     });
 
-    // Logo Placeholder (Bottom Right)
+    // Chat Icon (Bottom Right) - Like the image
     ctx.fillStyle = '#ffffff';
-    ctx.font = '30px Arial';
+    ctx.font = '50px Arial';
     ctx.textAlign = 'right';
-    ctx.fillText('⚔️💬', width - 100, height - 50);
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('💬✕', width - 100, height - 60);
 
     return canvas.toBuffer();
   }
