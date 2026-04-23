@@ -4,8 +4,16 @@ const cron = require('node-cron');
 const db = require('./db');
 const ui = require('./ui');
 const graph = require('./graph');
+const { connectDB } = require('./mongodb');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
+
+// Connect to MongoDB
+connectDB().then(() => {
+  console.log('MongoDB connection established');
+}).catch(err => {
+  console.error('MongoDB connection error:', err);
+});
 
 // Get bot username on launch
 bot.telegram.getMe().then((botInfo) => {
@@ -30,15 +38,15 @@ bot.telegram.getMe().then((botInfo) => {
 // Middleware for message tracking
 bot.use(async (ctx, next) => {
   if (ctx.message && ctx.from && !ctx.from.is_bot) {
-    db.updateUser(ctx.from);
+    await db.updateUser(ctx.from);
     if (ctx.chat && (ctx.chat.type === 'group' || ctx.chat.type === 'supergroup')) {
-      db.updateGroup(ctx.chat);
-      db.incrementMessageCount(ctx.from.id, ctx.chat.id);
+      await db.updateGroup(ctx.chat);
+      await db.incrementMessageCount(ctx.from.id, ctx.chat.id);
       
       // Check for message milestones
-      const settings = db.getGroupSettings(ctx.chat.id);
+      const settings = await db.getGroupSettings(ctx.chat.id);
       if (settings.notifications) {
-        const milestone = db.checkMessageMilestone(ctx.chat.id);
+        const milestone = await db.checkMessageMilestone(ctx.chat.id);
         if (milestone > 0) {
           const milestoneMessages = {
             500: `🎉 *MILESTONE REACHED!*\n\nThis group has sent *500 messages* today! Keep the conversation going! 🔥`,
@@ -74,11 +82,11 @@ const statsHandler = async (ctx) => {
   if (!await isAdmin(ctx)) return ctx.reply('Only admins can view stats.');
   
   const userId = ctx.from.id;
-  const stats = db.getUserStats(userId);
+  const stats = await db.getUserStats(userId);
   const ranks = {
-    overall: db.getGlobalRank(userId, 'overall'),
-    today: db.getGlobalRank(userId, 'today'),
-    weekly: db.getGlobalRank(userId, 'weekly')
+    overall: await db.getGlobalRank(userId, 'overall'),
+    today: await db.getGlobalRank(userId, 'today'),
+    weekly: await db.getGlobalRank(userId, 'weekly')
   };
 
   const text = ui.formatStats(ctx.from, stats, ranks);
@@ -115,9 +123,9 @@ const leaderboardHandler = async (ctx) => {
   }
 
   const groupId = ctx.chat.id;
-  const settings = db.getGroupSettings(groupId);
-  const leaderboard = db.getLeaderboard(groupId, 'overall');
-  const totalMessages = db.getTotalMessages(groupId, 'overall');
+  const settings = await db.getGroupSettings(groupId);
+  const leaderboard = await db.getLeaderboard(groupId, 'overall');
+  const totalMessages = await db.getTotalMessages(groupId, 'overall');
   
   const text = ui.formatLeaderboard(leaderboard, totalMessages, 'overall');
   const keyboard = ui.leaderboardKeyboard('overall');
@@ -156,7 +164,7 @@ bot.action('back_to_start', (ctx) => {
 });
 
 // Settings handler
-bot.action('settings', (ctx) => {
+bot.action('settings', async (ctx) => {
   if (ctx.chat.type === 'private') {
     ctx.editMessageText('⚙️ *SETTINGS*\n\nChoose an option to configure the bot.', {
       parse_mode: 'Markdown',
@@ -210,7 +218,7 @@ bot.action('gs_main', async (ctx) => {
 
 bot.action('gs_lang', async (ctx) => {
   if (!await isAdmin(ctx)) return ctx.answerCbQuery('Only admins can change settings.');
-  const settings = db.getGroupSettings(ctx.chat.id);
+  const settings = await db.getGroupSettings(ctx.chat.id);
   ctx.editMessageText('ChatFight ⚡                                     admin\n🏳️ *Choose the group language*', {
     parse_mode: 'Markdown',
     ...ui.languageKeyboard(settings.language)
@@ -237,7 +245,7 @@ bot.action('gs_games', async (ctx) => {
 
 bot.action('gs_game_hangman', async (ctx) => {
   if (!await isAdmin(ctx)) return ctx.answerCbQuery('Only admins can change settings.');
-  const settings = db.getGroupSettings(ctx.chat.id);
+  const settings = await db.getGroupSettings(ctx.chat.id);
   ctx.editMessageText(ui.formatHangmanSettings(settings.hangman_enabled), {
     parse_mode: 'Markdown',
     ...ui.gameSettingsKeyboard('hangman', settings.hangman_enabled)
@@ -246,7 +254,7 @@ bot.action('gs_game_hangman', async (ctx) => {
 
 bot.action('gs_game_fast', async (ctx) => {
   if (!await isAdmin(ctx)) return ctx.answerCbQuery('Only admins can change settings.');
-  const settings = db.getGroupSettings(ctx.chat.id);
+  const settings = await db.getGroupSettings(ctx.chat.id);
   ctx.editMessageText(ui.formatFastTypingSettings(settings.fast_typing_enabled), {
     parse_mode: 'Markdown',
     ...ui.gameSettingsKeyboard('fast_typing', settings.fast_typing_enabled)
@@ -257,9 +265,9 @@ bot.action(/toggle_game_(.+)/, async (ctx) => {
   if (!await isAdmin(ctx)) return ctx.answerCbQuery('Only admins can change settings.');
   const game = ctx.match[1];
   const settingKey = `${game}_enabled`;
-  const settings = db.getGroupSettings(ctx.chat.id);
+  const settings = await db.getGroupSettings(ctx.chat.id);
   const newValue = settings[settingKey] ? 0 : 1;
-  db.updateGroupSetting(ctx.chat.id, settingKey, newValue);
+  await db.updateGroupSetting(ctx.chat.id, settingKey, newValue);
   
   if (game === 'hangman') {
     ctx.editMessageText(ui.formatHangmanSettings(newValue), {
@@ -276,7 +284,7 @@ bot.action(/toggle_game_(.+)/, async (ctx) => {
 
 bot.action('gs_other', async (ctx) => {
   if (!await isAdmin(ctx)) return ctx.answerCbQuery('Only admins can change settings.');
-  const settings = db.getGroupSettings(ctx.chat.id);
+  const settings = await db.getGroupSettings(ctx.chat.id);
   ctx.editMessageText(ui.formatOtherSettings(settings), {
     parse_mode: 'Markdown',
     ...ui.otherSettingsKeyboard(settings)
@@ -286,11 +294,11 @@ bot.action('gs_other', async (ctx) => {
 bot.action(/toggle_s_(.+)/, async (ctx) => {
   if (!await isAdmin(ctx)) return ctx.answerCbQuery('Only admins can change settings.');
   const setting = ctx.match[1];
-  const settings = db.getGroupSettings(ctx.chat.id);
+  const settings = await db.getGroupSettings(ctx.chat.id);
   const newValue = settings[setting] ? 0 : 1;
-  db.updateGroupSetting(ctx.chat.id, setting, newValue);
+  await db.updateGroupSetting(ctx.chat.id, setting, newValue);
   
-  const updatedSettings = db.getGroupSettings(ctx.chat.id);
+  const updatedSettings = await db.getGroupSettings(ctx.chat.id);
   // Determine which UI to show based on the current view
   if (ctx.callbackQuery.message.text.includes('OBJECTIVES NOTIFICATION')) {
     ctx.editMessageText(ui.formatObjectivesSettings(updatedSettings), {
@@ -307,7 +315,7 @@ bot.action(/toggle_s_(.+)/, async (ctx) => {
 
 bot.action('gs_profile_view', async (ctx) => {
   if (!await isAdmin(ctx)) return ctx.answerCbQuery('Only admins can change settings.');
-  const settings = db.getGroupSettings(ctx.chat.id);
+  const settings = await db.getGroupSettings(ctx.chat.id);
   ctx.editMessageText(ui.formatProfileView(), {
     parse_mode: 'Markdown',
     ...ui.profileViewKeyboard(settings.profile_view)
@@ -317,16 +325,17 @@ bot.action('gs_profile_view', async (ctx) => {
 bot.action(/setpv_(.+)/, async (ctx) => {
   if (!await isAdmin(ctx)) return ctx.answerCbQuery('Only admins can change settings.');
   const view = ctx.match[1];
-  db.updateGroupSetting(ctx.chat.id, 'profile_view', view);
+  await db.updateGroupSetting(ctx.chat.id, 'profile_view', view);
+  const settings = await db.getGroupSettings(ctx.chat.id);
   ctx.editMessageText(ui.formatProfileView(), {
     parse_mode: 'Markdown',
-    ...ui.profileViewKeyboard(view)
+    ...ui.profileViewKeyboard(settings.profile_view)
   });
 });
 
 bot.action('gs_objectives', async (ctx) => {
   if (!await isAdmin(ctx)) return ctx.answerCbQuery('Only admins can change settings.');
-  const settings = db.getGroupSettings(ctx.chat.id);
+  const settings = await db.getGroupSettings(ctx.chat.id);
   ctx.editMessageText(ui.formatObjectivesSettings(settings), {
     parse_mode: 'Markdown',
     ...ui.objectivesKeyboard(settings.notifications)
@@ -338,11 +347,11 @@ bot.action('set_obj_rate', async (ctx) => {
   // In a real implementation, you'd use a wizard or prompt for a number.
   // For this task, we'll cycle through some common values.
   const rates = [100, 500, 1000, 2000, 5000];
-  const settings = db.getGroupSettings(ctx.chat.id);
+  const settings = await db.getGroupSettings(ctx.chat.id);
   const nextRate = rates[(rates.indexOf(settings.objectives_rate) + 1) % rates.length];
-  db.updateGroupSetting(ctx.chat.id, 'objectives_rate', nextRate);
+  await db.updateGroupSetting(ctx.chat.id, 'objectives_rate', nextRate);
   
-  const updatedSettings = db.getGroupSettings(ctx.chat.id);
+  const updatedSettings = await db.getGroupSettings(ctx.chat.id);
   ctx.editMessageText(ui.formatObjectivesSettings(updatedSettings), {
     parse_mode: 'Markdown',
     ...ui.objectivesKeyboard(updatedSettings.notifications)
@@ -358,8 +367,8 @@ bot.action('set_obj_text', async (ctx) => {
 bot.command('groupstats', async (ctx) => {
   if (!await isAdmin(ctx)) return ctx.reply('Only admins can view group stats.');
   const groupId = ctx.chat.id;
-  const totalMessages = db.getTotalMessages(groupId, 'overall');
-  const todayMessages = db.getTotalMessages(groupId, 'today');
+  const totalMessages = await db.getTotalMessages(groupId, 'overall');
+  const todayMessages = await db.getTotalMessages(groupId, 'today');
   const botMsg = await ctx.reply(`📊 *GROUP STATS*\n\n📩 Total messages: *${totalMessages.toLocaleString()}*\n📩 Messages today: *${todayMessages.toLocaleString()}*`, { parse_mode: 'Markdown' });
   autoDeleteMessage(ctx, botMsg.message_id);
   autoDeleteMessage(ctx, ctx.message.message_id);
@@ -370,7 +379,7 @@ bot.command('topusers', async (ctx) => {
   if (!await isAdmin(ctx)) return ctx.reply('Only admins can view global users leaderboard.');
   
   const period = 'overall'; // Default period
-  const leaderboard = db.getGlobalUserLeaderboard(period, 20);
+  const leaderboard = await db.getGlobalUserLeaderboard(period, 20);
   const text = ui.formatGlobalUserLeaderboard(leaderboard, period);
   
   const keyboard = Markup.inlineKeyboard([
@@ -390,7 +399,7 @@ bot.command('topgroups', async (ctx) => {
   if (!await isAdmin(ctx)) return ctx.reply('Only admins can view global groups leaderboard.');
   
   const period = 'overall'; // Default period
-  const leaderboard = db.getGlobalGroupLeaderboard(period, 20);
+  const leaderboard = await db.getGlobalGroupLeaderboard(period, 20);
   const text = ui.formatGlobalGroupLeaderboard(leaderboard, period);
   
   const keyboard = Markup.inlineKeyboard([
@@ -422,7 +431,7 @@ bot.command('mytop', async (ctx) => {
   
   const userId = ctx.from.id;
   const period = 'overall'; // Default period
-  const userGroups = db.getUserGroups(userId, period);
+  const userGroups = await db.getUserGroups(userId, period);
   const text = ui.formatMyTopGroups(userGroups, period);
   
   const keyboard = Markup.inlineKeyboard([
@@ -477,9 +486,9 @@ bot.command('leaderboard', async (ctx) => {
   }
 
   const groupId = ctx.chat.id;
-  const settings = db.getGroupSettings(groupId);
-  const leaderboard = db.getLeaderboard(groupId, 'overall');
-  const totalMessages = db.getTotalMessages(groupId, 'overall');
+  const settings = await db.getGroupSettings(groupId);
+  const leaderboard = await db.getLeaderboard(groupId, 'overall');
+  const totalMessages = await db.getTotalMessages(groupId, 'overall');
   
   const text = ui.formatLeaderboard(leaderboard, totalMessages, 'overall');
   const keyboard = ui.leaderboardKeyboard('overall');
@@ -492,7 +501,7 @@ bot.command('leaderboard', async (ctx) => {
       ...keyboard
     });
   } else {
-    ctx.reply(text, {
+    await ctx.reply(text, {
       parse_mode: 'Markdown',
       ...keyboard
     });
@@ -503,10 +512,10 @@ bot.command('leaderboard', async (ctx) => {
 bot.action(/lb_(.+)/, async (ctx) => {
   const period = ctx.match[1];
   const groupId = ctx.chat.id;
-  const settings = db.getGroupSettings(groupId);
+  const settings = await db.getGroupSettings(groupId);
   
-  const leaderboard = db.getLeaderboard(groupId, period);
-  const totalMessages = db.getTotalMessages(groupId, period);
+  const leaderboard = await db.getLeaderboard(groupId, period);
+  const totalMessages = await db.getTotalMessages(groupId, period);
   
   const text = ui.formatLeaderboard(leaderboard, totalMessages, period);
   const keyboard = ui.leaderboardKeyboard(period);
@@ -535,7 +544,7 @@ bot.action(/lb_(.+)/, async (ctx) => {
 // Global User Leaderboard actions
 bot.action(/gub_(.+)/, async (ctx) => {
   const period = ctx.match[1];
-  const leaderboard = db.getGlobalUserLeaderboard(period, 20);
+  const leaderboard = await db.getGlobalUserLeaderboard(period, 20);
   const text = ui.formatGlobalUserLeaderboard(leaderboard, period);
   
   const keyboard = Markup.inlineKeyboard([
@@ -559,7 +568,7 @@ bot.action(/gub_(.+)/, async (ctx) => {
 // Global Group Leaderboard actions
 bot.action(/ggb_(.+)/, async (ctx) => {
   const period = ctx.match[1];
-  const leaderboard = db.getGlobalGroupLeaderboard(period, 20);
+  const leaderboard = await db.getGlobalGroupLeaderboard(period, 20);
   const text = ui.formatGlobalGroupLeaderboard(leaderboard, period);
   
   const keyboard = Markup.inlineKeyboard([
@@ -584,7 +593,7 @@ bot.action(/ggb_(.+)/, async (ctx) => {
 bot.action(/mtg_(.+)/, async (ctx) => {
   const period = ctx.match[1];
   const userId = ctx.from.id;
-  const userGroups = db.getUserGroups(userId, period);
+  const userGroups = await db.getUserGroups(userId, period);
   const text = ui.formatMyTopGroups(userGroups, period);
   
   const keyboard = Markup.inlineKeyboard([
