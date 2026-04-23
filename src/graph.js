@@ -8,10 +8,10 @@ module.exports = {
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
-    // Try to load background image (eyes photo)
+    // Try to load background image
     let bgImageLoaded = false;
     try {
-      const bgImagePath = path.join(__dirname, '..', 'ChatGPT Image Apr 23, 2026 at 06_52_05 PM.png');
+      const bgImagePath = path.join(__dirname, '..', '2026-04-23 18.44.50.jpg');
       const bgImage = await loadImage(bgImagePath);
       ctx.drawImage(bgImage, 0, 0, width, height);
       bgImageLoaded = true;
