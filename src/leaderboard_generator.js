@@ -40,48 +40,52 @@ module.exports = {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
     ctx.fillRect(0, 0, width, height);
 
-    // Decorative pink circles (like the reference image)
-    ctx.globalAlpha = 0.3;
-    ctx.strokeStyle = '#ff6b7a';
-    ctx.lineWidth = 40;
+    // Header Text - LEADERBOARD
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 100px sans-serif'; // Bigger font
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
     
-    // Top left circle
+    // Shadow for more impact
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetX = 5;
+    ctx.shadowOffsetY = 5;
+    ctx.fillText('LEADERBOARD', width / 2, 45);
+    ctx.shadowColor = 'transparent';
+
+    // Decorative pink swirls (pattern like the screenshot)
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = '#b34757';
+    ctx.lineWidth = 35;
+    
+    // Top-left swirl
     ctx.beginPath();
-    ctx.arc(-50, 50, 200, 0, Math.PI * 2);
+    ctx.arc(-50, 50, 220, 0, Math.PI * 2);
     ctx.stroke();
     
-    // Bottom right circle
+    // Middle-left swirl
     ctx.beginPath();
-    ctx.arc(width + 50, height - 50, 250, 0, Math.PI * 2);
+    ctx.arc(-80, 250, 180, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Bottom-right swirl
+    ctx.beginPath();
+    ctx.arc(width + 80, height - 100, 300, 0, Math.PI * 2);
     ctx.stroke();
     
     ctx.globalAlpha = 1.0;
 
-    // Header Text - LEADERBOARD
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 90px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
+    // Inner Container - Dark, semi-transparent rounded box
+    const containerX = 50;
+    const containerY = 175;
+    const containerWidth = width - 100;
+    const containerHeight = height - 225;
+    const containerRadius = 45;
     
-    // Add shadow for better readability
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetX = 4;
-    ctx.shadowOffsetY = 4;
-    ctx.fillText('LEADERBOARD', width / 2, 40);
-    ctx.shadowColor = 'transparent';
-
-    // Inner Container - Semi-transparent dark box
-    const containerX = 60;
-    const containerY = 160;
-    const containerWidth = width - 120;
-    const containerHeight = height - 220;
-    const containerRadius = 40;
-    
-    // Draw rounded rectangle container
-    ctx.fillStyle = 'rgba(25, 10, 15, 0.75)';
-    ctx.strokeStyle = 'rgba(255, 107, 122, 0.4)';
-    ctx.lineWidth = 3;
+    ctx.fillStyle = 'rgba(15, 5, 8, 0.78)';
+    ctx.strokeStyle = 'rgba(179, 71, 87, 0.45)';
+    ctx.lineWidth = 4;
     
     ctx.beginPath();
     ctx.roundRect(containerX, containerY, containerWidth, containerHeight, containerRadius);
@@ -91,20 +95,18 @@ module.exports = {
     if (leaderboard.length === 0) return canvas.toBuffer();
 
     const maxScore = Math.max(...leaderboard.map(u => u.total));
-    const containerPadding = 40;
-    const nameColumnWidth = 160;
+    const containerPadding = 45;
+    const nameColumnWidth = 180;
     const availableHeight = containerHeight - (containerPadding * 2);
-    const barSpacing = 10;
+    const barSpacing = 12;
     const displayCount = Math.min(10, leaderboard.length);
     
-    // Calculate bar height dynamically
-    const barHeight = Math.min(45, (availableHeight - (barSpacing * (displayCount - 1))) / displayCount);
-    const maxBarWidth = containerWidth - nameColumnWidth - (containerPadding * 2) - 100;
+    const barHeight = Math.min(48, (availableHeight - (barSpacing * (displayCount - 1))) / displayCount);
+    const maxBarWidth = containerWidth - nameColumnWidth - (containerPadding * 2) - 80;
 
     leaderboard.slice(0, displayCount).forEach((user, index) => {
       const y = containerY + containerPadding + (index * (barHeight + barSpacing));
       
-      // Normalize and truncate username
       let rawName = user.first_name || user.username || 'User';
       let name = normalizeText(rawName);
       if (name.length > 15) {
@@ -112,60 +114,66 @@ module.exports = {
       }
       
       const score = user.total;
-      const barWidth = Math.max(40, (score / maxScore) * maxBarWidth);
+      const barWidth = Math.max(50, (score / maxScore) * maxBarWidth);
       
-      // User Name (Left side)
+      // User Name (Left)
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 24px sans-serif';
+      ctx.font = 'bold 26px sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(name, containerX + containerPadding, y + (barHeight / 2));
 
-      // Bar Start Position
+      // Bar (Right)
       const barStartX = containerX + nameColumnWidth + containerPadding;
-
-      // Draw Bar with Rounded Corners
       const barRadius = barHeight / 2;
-      ctx.fillStyle = '#b34757'; // Solid color similar to reference
+      ctx.fillStyle = '#b34757'; // Vibrat red from screenshot
       
       ctx.beginPath();
       ctx.roundRect(barStartX, y, barWidth, barHeight, barRadius);
       ctx.fill();
 
-      // Score - Inside bar if large enough, otherwise to the right
+      // Score (Centered in Bar)
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px sans-serif';
-      ctx.textBaseline = 'middle';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.textAlign = 'center';
       
-      if (barWidth > 100) {
-        ctx.textAlign = 'center';
+      if (barWidth > 120) {
         ctx.fillText(score.toLocaleString(), barStartX + (barWidth / 2), y + (barHeight / 2));
       } else {
         ctx.textAlign = 'left';
-        ctx.fillText(score.toLocaleString(), barStartX + barWidth + 15, y + (barHeight / 2));
+        ctx.fillText(score.toLocaleString(), barStartX + barWidth + 20, y + (barHeight / 2));
       }
     });
 
-    // Chat Icon (Bottom Right)
-    const iconX = width - 100;
-    const iconY = height - 80;
-    const iconSize = 60;
+    // Chat bubble icon with crossed swords in bottom-right
+    const iconX = width - 110;
+    const iconY = height - 90;
+    const iconSize = 75;
     
-    // Bubble
+    // Main bubble
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(iconX, iconY, iconSize / 2, 0, Math.PI * 2);
     ctx.fill();
     
-    // X symbol inside (crossed swords or similar)
+    // Swords
     ctx.strokeStyle = '#2b0508';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 5;
     ctx.beginPath();
-    ctx.moveTo(iconX - 12, iconY - 12);
-    ctx.lineTo(iconX + 12, iconY + 12);
-    ctx.moveTo(iconX + 12, iconY - 12);
-    ctx.lineTo(iconX - 12, iconY + 12);
+    ctx.moveTo(iconX - 16, iconY - 16);
+    ctx.lineTo(iconX + 16, iconY + 16);
+    ctx.moveTo(iconX + 16, iconY - 16);
+    ctx.lineTo(iconX - 16, iconY + 16);
     ctx.stroke();
+    
+    // Little hilt/dots for swords
+    ctx.fillStyle = '#2b0508';
+    ctx.beginPath();
+    ctx.arc(iconX - 16, iconY - 16, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(iconX + 16, iconY - 16, 4, 0, Math.PI * 2);
+    ctx.fill();
 
     return canvas.toBuffer();
   }
