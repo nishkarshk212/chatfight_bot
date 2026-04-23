@@ -15,23 +15,29 @@ module.exports = {
     // Load and draw background image
     let bgImage;
     try {
-      // Use the provided background image
-      const bgImagePath = path.join(__dirname, '..', '2026-04-22 21.31.04.jpg');
+      // Use the new background image
+      const bgImagePath = path.join(__dirname, '..', '2026-04-23 19.57.26.jpg');
       bgImage = await loadImage(bgImagePath);
       // Draw background image stretched to fill canvas
       ctx.drawImage(bgImage, 0, 0, width, height);
     } catch (error) {
       console.log('Background image not found, using fallback');
-      const fallbackPath = path.join(__dirname, '..', '2026-04-22 21.30.02.jpg');
+      const fallbackPath = path.join(__dirname, '..', '2026-04-22 21.31.04.jpg');
       try {
         bgImage = await loadImage(fallbackPath);
         ctx.drawImage(bgImage, 0, 0, width, height);
       } catch (e) {
-        const gradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width / 2);
-        gradient.addColorStop(0, '#2b0508');
-        gradient.addColorStop(1, '#1a0305');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, width, height);
+        const fallbackPath2 = path.join(__dirname, '..', '2026-04-22 21.30.02.jpg');
+        try {
+          bgImage = await loadImage(fallbackPath2);
+          ctx.drawImage(bgImage, 0, 0, width, height);
+        } catch (ee) {
+          const gradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width / 2);
+          gradient.addColorStop(0, '#2b0508');
+          gradient.addColorStop(1, '#1a0305');
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, width, height);
+        }
       }
     }
 

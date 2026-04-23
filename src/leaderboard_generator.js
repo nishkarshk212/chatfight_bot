@@ -12,13 +12,13 @@ module.exports = {
     // Load background image
     let bgImage;
     try {
-      // Try the provided background image first
-      const bgImagePath = path.join(__dirname, '..', '2026-04-22 21.31.04.jpg');
+      // Use the new background image
+      const bgImagePath = path.join(__dirname, '..', '2026-04-23 19.57.26.jpg');
       bgImage = await loadImage(bgImagePath);
     } catch (error) {
       try {
-        // Fallback to another existing image
-        const fallbackPath = path.join(__dirname, '..', '2026-04-22 21.30.02.jpg');
+        // Fallback to previous image
+        const fallbackPath = path.join(__dirname, '..', '2026-04-22 21.31.04.jpg');
         bgImage = await loadImage(fallbackPath);
       } catch (e) {
         console.error('Failed to load background image:', e);
